@@ -26,14 +26,21 @@ void main() async {
     provisional: true,
     sound: false,
   );
-  
-  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: false, // Required to display a heads up notification
-    badge: true,
-    sound: false,
-  );
+
+  if(Platform.isIOS) {
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
+      alert: false, // Required to display a heads up notification
+      badge: true,
+      sound: true,
+    );
+  }
 
   runApp(const MyApp());
+}
+
+Future<void> _firebaseBackgroundMessageHandler(RemoteMessage message) async {
+  print("Handling a background message: ${message.notification?.title}");
 }
 
 class MyApp extends StatelessWidget {
@@ -55,19 +62,17 @@ class MyApp extends StatelessWidget {
   }
 
   void _addFirebaseMessageListener() async {
-    RemoteMessage? message =
-        await FirebaseMessaging.instance.getInitialMessage();
 
     // 종료, 비활성 상태일 때 푸시가 "도착"하면 실행됨.
-    // FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundMessageHandler);
+    FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundMessageHandler);
 
     // 활성 상태일 때 푸시가 "도착"하면 실행됨.
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      RemoteNotification notification = message.notification!;
+      RemoteNotification? notification = message.notification;
       print(message.data);
       PageEventConnector().onForegroundFirebaseMessage(
-          message.notification?.title,
-          message.notification?.body,
+          notification?.title,
+          notification?.body,
           message.data['url']);
     });
   }
