@@ -10,7 +10,7 @@
 
    <application
         android:label="복대리"
-        android:icon="@mipmap/launcher_icon"
+        android:icon="@mipmap/bok_ic"
         android:usesCleartextTraffic="true">
         <!-- nvrstop added android:exported="true" -->
         <activity
