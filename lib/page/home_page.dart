@@ -75,123 +75,118 @@ class _HomePageState extends State<HomePage> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
+        //키보드 스크롤 컨트롤
+        resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: Stack(
             children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Expanded(
-                    child: InAppWebView(
-                      initialUrlRequest: URLRequest(
-                          url: Uri.parse(
-                              '${Config.loginUrl}?t=${DateTime.now().millisecondsSinceEpoch}')),
-                      initialOptions: InAppWebViewGroupOptions(
-                        crossPlatform: InAppWebViewOptions(
-                            javaScriptEnabled: true,
-                            clearCache: false,
-                            mediaPlaybackRequiresUserGesture: false,
-                            useShouldOverrideUrlLoading: true,
-                            useOnDownloadStart: true),
-                        android: AndroidInAppWebViewOptions(
-                          useHybridComposition: true,
-                        ),
-                        ios: IOSInAppWebViewOptions(
-                          allowsInlineMediaPlayback: true,
-                        ),
-                      ),
-                      onWebViewCreated: (controller) {
-                        _webViewController ??= controller;
-                        // https://inappwebview.dev/docs/javascript/communication/
-                        controller.addJavaScriptHandler(
-                            handlerName: 'bokdaeriJavaScriptHandler',
-                            callback: (args) async {
-                              print(args);
-                              return _getPushToken();
-                            });
-                        //_loadWebViewUrl();
-                      },
-                      onLoadStart:
-                          (InAppWebViewController controller, url) async {
-                        print('@@@@@@@@@ onLoadStart ${url.toString()}');
-                        setState(() {
-                          _loadingVisible = true;
-                        });
-                      },
-                      onLoadStop:
-                          (InAppWebViewController controller, url) async {
-                        print('@@@@@@@@@ onLoadStop ${url.toString()}');
-                        setState(() {
-                          _loadingVisible = false;
-                        });
-                      },
-                      onDownloadStart: (controller, url) async {
-                        print("onDownloadStart $url");
-
-                        showTopSnackBar(
-                          context,
-                          const CustomSnackBar.info(
-                            message: '파일 다운로드를 시작합니다.',
-                          ),
-                        );
-
-                        String tempPath = await Common.makeDownloadPath(
-                            DateTime.now().millisecondsSinceEpoch.toString());
-                        print('>>>>>>>>>>>>>>>>>>>>>>> $tempPath');
-                        Dio dio = Dio();
-                        dio.options.headers = {
-                          'User-Agent':
-                              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) FlutterInAppWebView/5.3.2',
-                        };
-
-                        bool isComplete = false;
-                        var response = await dio.download(
-                          url.toString(),
-                          tempPath,
-                          onReceiveProgress: (int received, int total) {
-                            print('>>>>>>> $received / $total');
-                            // showTopSnackBar(
-                            //   context,
-                            //   CustomSnackBar.info(
-                            //     message: '파일 다운로드를 진행중입니다.',
-                            //   ),
-                            // );
-                            if (received == total) {
-                              isComplete = true;
-                            }
-                          },
-                        );
-                        if (isComplete) {
-                          String fileName = await parseFileName(
-                              response.headers.map['content-disposition']);
-                          showTopSnackBar(
-                            context,
-                            CustomSnackBar.success(
-                              message: '파일 다운로드를 완료했습니다. $fileName',
-                            ),
-                          );
-                          Timer(const Duration(milliseconds: 1000), () async {
-                            if (fileName.isNotEmpty) {
-                              String filePath =
-                                  await Common.makeDownloadPath(fileName);
-                              File(tempPath).renameSync(filePath);
-                              OpenFile.open(filePath);
-                            } else {
-                              OpenFile.open(tempPath);
-                            }
-                          });
-                        } else {
-                          showTopSnackBar(
-                            context,
-                            const CustomSnackBar.error(
-                              message: '파일 다운로드를 실패했습니다.',
-                            ),
-                          );
-                        }
-                      },
-                    ),
+              InAppWebView(
+                initialUrlRequest: URLRequest(
+                    url: Uri.parse(
+                        '${Config.loginUrl}?t=${DateTime.now().millisecondsSinceEpoch}')),
+                initialOptions: InAppWebViewGroupOptions(
+                  crossPlatform: InAppWebViewOptions(
+                      javaScriptEnabled: true,
+                      clearCache: false,
+                      mediaPlaybackRequiresUserGesture: false,
+                      useShouldOverrideUrlLoading: true,
+                      useOnDownloadStart: true),
+                  android: AndroidInAppWebViewOptions(
+                    useHybridComposition: true,
                   ),
-                ],
+                  ios: IOSInAppWebViewOptions(
+                    allowsInlineMediaPlayback: true,
+                  ),
+                ),
+                onWebViewCreated: (controller) {
+                  _webViewController ??= controller;
+                  // https://inappwebview.dev/docs/javascript/communication/
+                  controller.addJavaScriptHandler(
+                      handlerName: 'bokdaeriJavaScriptHandler',
+                      callback: (args) async {
+                        print(args);
+                        return _getPushToken();
+                      });
+                  //_loadWebViewUrl();
+                },
+                onLoadStart:
+                    (InAppWebViewController controller, url) async {
+                  print('@@@@@@@@@ onLoadStart ${url.toString()}');
+                  setState(() {
+                    _loadingVisible = true;
+                  });
+                },
+                onLoadStop:
+                    (InAppWebViewController controller, url) async {
+                  print('@@@@@@@@@ onLoadStop ${url.toString()}');
+                  setState(() {
+                    _loadingVisible = false;
+                  });
+                },
+                onDownloadStart: (controller, url) async {
+                  print("onDownloadStart $url");
+
+                  showTopSnackBar(
+                    context,
+                    const CustomSnackBar.info(
+                      message: '파일 다운로드를 시작합니다.',
+                    ),
+                  );
+
+                  String tempPath = await Common.makeDownloadPath(
+                      DateTime.now().millisecondsSinceEpoch.toString());
+                  print('>>>>>>>>>>>>>>>>>>>>>>> $tempPath');
+                  Dio dio = Dio();
+                  dio.options.headers = {
+                    'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) FlutterInAppWebView/5.3.2',
+                  };
+
+                  bool isComplete = false;
+                  var response = await dio.download(
+                    url.toString(),
+                    tempPath,
+                    onReceiveProgress: (int received, int total) {
+                      print('>>>>>>> $received / $total');
+                      // showTopSnackBar(
+                      //   context,
+                      //   CustomSnackBar.info(
+                      //     message: '파일 다운로드를 진행중입니다.',
+                      //   ),
+                      // );
+                      if (received == total) {
+                        isComplete = true;
+                      }
+                    },
+                  );
+                  if (isComplete) {
+                    String fileName = await parseFileName(
+                        response.headers.map['content-disposition']);
+                    showTopSnackBar(
+                      context,
+                      CustomSnackBar.success(
+                        message: '파일 다운로드를 완료했습니다. $fileName',
+                      ),
+                    );
+                    Timer(const Duration(milliseconds: 1000), () async {
+                      if (fileName.isNotEmpty) {
+                        String filePath =
+                            await Common.makeDownloadPath(fileName);
+                        File(tempPath).renameSync(filePath);
+                        OpenFile.open(filePath);
+                      } else {
+                        OpenFile.open(tempPath);
+                      }
+                    });
+                  } else {
+                    showTopSnackBar(
+                      context,
+                      const CustomSnackBar.error(
+                        message: '파일 다운로드를 실패했습니다.',
+                      ),
+                    );
+                  }
+                },
               ),
               Visibility(
                 visible: _loadingVisible,
