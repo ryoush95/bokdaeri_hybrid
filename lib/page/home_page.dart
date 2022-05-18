@@ -27,6 +27,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   InAppWebViewController? _webViewController;
   bool _loadingVisible = true;
+  Uri url = Uri.parse(Config.loginUrl);
+  final CookieManager _cookieManager = CookieManager.instance();
 
   @override
   void initState() {
@@ -41,18 +43,30 @@ class _HomePageState extends State<HomePage> {
         (String title, String content, String url) {
       _showAlertDialog(context, title, content, url);
     };
+    getCookie();
+    setCookie();
+  }
+
+  void getCookie() async {
+    List<Cookie> c = await _cookieManager.getCookies(url: url);
+    print(c);
+  }
+
+  void setCookie() async {
+    await _cookieManager.setCookie(
+        url: url, name: 'login', value: 'myvalue', isSecure: true);
   }
 
   Future<bool> requestPermission(BuildContext context) async {
-    PermissionStatus status = await Permission.storage.status ;
+    PermissionStatus status = await Permission.storage.status;
     String? token = await FirebaseMessaging.instance.getToken();
     print(token);
-    if(status.isGranted == true){
+    if (status.isGranted == true) {
       return true;
     }
 
     Map<Permission, PermissionStatus> statuses =
-    await [Permission.storage].request();
+        await [Permission.storage].request();
     // var status = await requestCameraPermission(context);
 
     if (statuses[Permission.storage]!.isGranted == false) {
@@ -81,9 +95,8 @@ class _HomePageState extends State<HomePage> {
           child: Stack(
             children: [
               InAppWebView(
-                initialUrlRequest: URLRequest(
-                    url: Uri.parse(
-                        '${Config.loginUrl}?t=${DateTime.now().millisecondsSinceEpoch}')),
+                initialUrlRequest: URLRequest(url: Uri.parse(
+                    '${Config.loginUrl}?t=${DateTime.now().millisecondsSinceEpoch}')),
                 initialOptions: InAppWebViewGroupOptions(
                   crossPlatform: InAppWebViewOptions(
                       javaScriptEnabled: true,
@@ -109,15 +122,13 @@ class _HomePageState extends State<HomePage> {
                       });
                   //_loadWebViewUrl();
                 },
-                onLoadStart:
-                    (InAppWebViewController controller, url) async {
+                onLoadStart: (InAppWebViewController controller, url) async {
                   print('@@@@@@@@@ onLoadStart ${url.toString()}');
                   setState(() {
                     _loadingVisible = true;
                   });
                 },
-                onLoadStop:
-                    (InAppWebViewController controller, url) async {
+                onLoadStop: (InAppWebViewController controller, url) async {
                   print('@@@@@@@@@ onLoadStop ${url.toString()}');
                   setState(() {
                     _loadingVisible = false;
