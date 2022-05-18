@@ -43,18 +43,13 @@ class _HomePageState extends State<HomePage> {
         (String title, String content, String url) {
       _showAlertDialog(context, title, content, url);
     };
+
     getCookie();
-    setCookie();
   }
 
   void getCookie() async {
     List<Cookie> c = await _cookieManager.getCookies(url: url);
-    print(c);
-  }
-
-  void setCookie() async {
-    await _cookieManager.setCookie(
-        url: url, name: 'login', value: 'myvalue', isSecure: true);
+    print('@@@@@@@@@@@@@@@@$c');
   }
 
   Future<bool> requestPermission(BuildContext context) async {

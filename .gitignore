@@ -315,4 +315,7 @@ fabric.properties
 
 !/gradle/wrapper/gradle-wrapper.jar
 
+ios/Podfile.lock
+pubspec.lock
+
 # End of https://www.toptal.com/developers/gitignore/api/flutter,androidstudio,android,swift
