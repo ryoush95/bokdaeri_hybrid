@@ -7,8 +7,10 @@ import 'package:bokdaeri_hybrid/module/config.dart';
 import 'package:bokdaeri_hybrid/module/page_event_connector.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:open_file/open_file.dart';
 import 'package:top_snackbar_flutter/custom_snack_bar.dart';
 import 'package:top_snackbar_flutter/top_snack_bar.dart';
@@ -27,14 +29,11 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   InAppWebViewController? _webViewController;
   bool _loadingVisible = true;
-  Uri url = Uri.parse(Config.loginUrl);
-  final CookieManager _cookieManager = CookieManager.instance();
 
   @override
   void initState() {
     super.initState();
     print('################## initState HOME PAGE ${widget.params}');
-
 
     requestPermission(context);
 
@@ -43,13 +42,6 @@ class _HomePageState extends State<HomePage> {
         (String title, String content, String url) {
       _showAlertDialog(context, title, content, url);
     };
-
-    getCookie();
-  }
-
-  void getCookie() async {
-    List<Cookie> c = await _cookieManager.getCookies(url: url);
-    print('@@@@@@@@@@@@@@@@$c');
   }
 
   Future<bool> requestPermission(BuildContext context) async {
@@ -90,8 +82,8 @@ class _HomePageState extends State<HomePage> {
           child: Stack(
             children: [
               InAppWebView(
-                initialUrlRequest: URLRequest(url: Uri.parse(
-                    '${Config.loginUrl}?t=${DateTime.now().millisecondsSinceEpoch}')),
+                initialUrlRequest:
+                    URLRequest(url: Uri.parse(_makeInitialUrl())),
                 initialOptions: InAppWebViewGroupOptions(
                   crossPlatform: InAppWebViewOptions(
                       javaScriptEnabled: true,
@@ -110,10 +102,14 @@ class _HomePageState extends State<HomePage> {
                   _webViewController ??= controller;
                   // https://inappwebview.dev/docs/javascript/communication/
                   controller.addJavaScriptHandler(
-                      handlerName: 'bokdaeriJavaScriptHandler',
+                      handlerName: 'webviewJavaScriptHandler',
                       callback: (args) async {
-                        print(args);
-                        return _getPushToken();
+                        if (args[0] == 'setUserId') {
+                          String userId = args[1]['userId'];
+                          GetStorage().write('userId', userId);
+                          print('@addJavaScriptHandler userId $userId');
+                          return await _getPushToken();
+                        }
                       });
                   //_loadWebViewUrl();
                 },
@@ -291,5 +287,17 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+  }
+
+  String _makeInitialUrl() {
+    String? userId = GetStorage().read('userId');
+    print('@userId $userId');
+    if (userId != null && userId.isNotEmpty) {
+      print('@userId AAA');
+      return '${Config.homeUrl}/bbs/autoLogin.php?t=${DateTime.now().millisecondsSinceEpoch}&userId=$userId';
+    } else {
+      print('@userId BBB');
+      return '${Config.homeUrl}/?t=${DateTime.now().millisecondsSinceEpoch}';
+    }
   }
 }
