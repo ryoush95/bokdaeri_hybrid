@@ -9,12 +9,14 @@ import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:open_file/open_file.dart';
 import 'package:top_snackbar_flutter/custom_snack_bar.dart';
 import 'package:top_snackbar_flutter/top_snack_bar.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ignore: must_be_immutable
 class HomePage extends StatefulWidget {
@@ -29,6 +31,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   InAppWebViewController? _webViewController;
   bool _loadingVisible = true;
+  
+  static const platform = const MethodChannel('intent');
 
   @override
   void initState() {
@@ -77,7 +81,7 @@ class _HomePageState extends State<HomePage> {
       onWillPop: _onWillPop,
       child: Scaffold(
         //키보드 스크롤 컨트롤
-        resizeToAvoidBottomInset: false,
+        // resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: Stack(
             children: [
@@ -113,8 +117,29 @@ class _HomePageState extends State<HomePage> {
                       });
                   //_loadWebViewUrl();
                 },
+                shouldOverrideUrlLoading: (controller, NavigationAction navigation) async{
+                  var uri = navigation.request.url!;
+                  if(uri.scheme == 'intent'){
+                    try {
+                      var result = await platform.invokeMethod('launchKakaoTalk', {'url': uri.toString()});
+                      if(result != null ){
+                        await _webViewController?.loadUrl(urlRequest: URLRequest(url: Uri.parse(result)));
+                      }
+                    }catch (e){
+                      print('url fail $e');
+                    }
+                    return NavigationActionPolicy.CANCEL;
+                  }
+                  return NavigationActionPolicy.ALLOW;
+                },
                 onLoadStart: (InAppWebViewController controller, url) async {
                   print('@@@@@@@@@ onLoadStart ${url.toString()}');
+                  if(url.toString().contains("kakaolink://send")){
+                    if(Platform.isIOS){
+                      print('################${url!.scheme}');
+                      await launchUrl(url);
+                    }
+                  }
                   setState(() {
                     _loadingVisible = true;
                   });

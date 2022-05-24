@@ -8,6 +8,11 @@
 
     <uses-permission android:name="android.permission.CAMERA"/>
 
+    <!-- 카카오톡 패키지  -->
+    <queries>
+        <package android:name="com.kakao.talk" />
+    </queries>
+
    <application
         android:label="복대리"
         android:icon="@mipmap/bok_ic"
