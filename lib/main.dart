@@ -13,6 +13,7 @@ import 'package:get_storage/get_storage.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundMessageHandler);
   if (Platform.isAndroid) {
     await AndroidInAppWebViewController.setWebContentsDebuggingEnabled(true);
   }
@@ -67,18 +68,38 @@ class MyApp extends StatelessWidget {
   }
 
   void _addFirebaseMessageListener() async {
-
     // 종료, 비활성 상태일 때 푸시가 "도착"하면 실행됨.
-    FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundMessageHandler);
+    //FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundMessageHandler);
+
+    // 종료 상태에서, 푸시 알림을 "클릭"하면 실행됨.
+    RemoteMessage? message =
+    await FirebaseMessaging.instance.getInitialMessage();
+    if (message != null) {
+      PageEventConnector().onBackgroundFirebaseMessage(
+        message.notification?.title,
+        message.notification?.body,
+        message.data['url'],
+      );
+    }
+
+    // 활성, 비활성 상태에서, 푸시 알림을 "클릭"하면 실행됨.
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      PageEventConnector().onBackgroundFirebaseMessage(
+        message.notification?.title,
+        message.notification?.body,
+        message.data['url'],
+      );
+    });
 
     // 활성 상태일 때 푸시가 "도착"하면 실행됨.
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      RemoteNotification? notification = message.notification;
-      print(message.data);
-      PageEventConnector().onForegroundFirebaseMessage(
-          notification?.title,
-          notification?.body,
-          message.data['url']);
-    });
+    FirebaseMessaging.onMessage.listen(
+          (RemoteMessage message) async {
+        PageEventConnector().onForegroundFirebaseMessage(
+          message.notification?.title,
+          message.notification?.body,
+          message.data['url'],
+        );
+      },
+    );
   }
 }

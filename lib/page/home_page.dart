@@ -31,7 +31,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   InAppWebViewController? _webViewController;
   bool _loadingVisible = true;
-  
+
   static const platform = const MethodChannel('intent');
 
   @override
@@ -45,6 +45,27 @@ class _HomePageState extends State<HomePage> {
     PageEventConnector().foregroundFirebaseMessageHandler =
         (String title, String content, String url) {
       _showAlertDialog(context, title, content, url);
+    };
+
+    PageEventConnector().backgroundFirebaseMessageHandler =
+        (String title, String content, String url) {
+      print('Background Push $url');
+      if (url.isEmpty) {
+        return;
+      }
+      Timer.periodic(const Duration(milliseconds: 500), (timer) async {
+        if (_webViewController != null) {
+          print('Background Push webview not null');
+          if (_loadingVisible) {
+            print('Background Push webview stopLoading');
+            await _webViewController?.stopLoading();
+          }
+          print('Background Push webview loadUrl');
+          _webViewController?.loadUrl(
+              urlRequest: URLRequest(url: Uri.parse(_makeInitialUrl(url))));
+          timer.cancel();
+        }
+      });
     };
   }
 
@@ -81,13 +102,13 @@ class _HomePageState extends State<HomePage> {
       onWillPop: _onWillPop,
       child: Scaffold(
         //키보드 스크롤 컨트롤
-        // resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: Stack(
             children: [
               InAppWebView(
                 initialUrlRequest:
-                    URLRequest(url: Uri.parse(_makeInitialUrl())),
+                    URLRequest(url: Uri.parse(_makeInitialUrl(''))),
                 initialOptions: InAppWebViewGroupOptions(
                   crossPlatform: InAppWebViewOptions(
                       javaScriptEnabled: true,
@@ -117,15 +138,20 @@ class _HomePageState extends State<HomePage> {
                       });
                   //_loadWebViewUrl();
                 },
-                shouldOverrideUrlLoading: (controller, NavigationAction navigation) async{
+
+                // android kakaoTalk share
+                shouldOverrideUrlLoading:
+                    (controller, NavigationAction navigation) async {
                   var uri = navigation.request.url!;
-                  if(uri.scheme == 'intent'){
+                  if (uri.scheme == 'intent') {
                     try {
-                      var result = await platform.invokeMethod('launchKakaoTalk', {'url': uri.toString()});
-                      if(result != null ){
-                        await _webViewController?.loadUrl(urlRequest: URLRequest(url: Uri.parse(result)));
+                      var result = await platform.invokeMethod(
+                          'launchKakaoTalk', {'url': uri.toString()});
+                      if (result != null) {
+                        await _webViewController?.loadUrl(
+                            urlRequest: URLRequest(url: Uri.parse(result)));
                       }
-                    }catch (e){
+                    } catch (e) {
                       print('url fail $e');
                     }
                     return NavigationActionPolicy.CANCEL;
@@ -134,8 +160,10 @@ class _HomePageState extends State<HomePage> {
                 },
                 onLoadStart: (InAppWebViewController controller, url) async {
                   print('@@@@@@@@@ onLoadStart ${url.toString()}');
-                  if(url.toString().contains("kakaolink://send")){
-                    if(Platform.isIOS){
+
+                  // iphone kakaoTalk share
+                  if (url.toString().contains("kakaolink://send")) {
+                    if (Platform.isIOS) {
                       print('################${url!.scheme}');
                       await launchUrl(url);
                     }
@@ -314,15 +342,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  String _makeInitialUrl() {
+  String _makeInitialUrl(String target) {
     String? userId = GetStorage().read('userId');
+    if (target.isNotEmpty) {
+      target = Uri.encodeQueryComponent(target);
+    }
     print('@userId $userId');
     if (userId != null && userId.isNotEmpty) {
       print('@userId AAA');
-      return '${Config.homeUrl}/bbs/autoLogin.php?t=${DateTime.now().millisecondsSinceEpoch}&userId=$userId';
+      return '${Config.homeUrl}/bbs/autoLogin.php?t=${DateTime.now().millisecondsSinceEpoch}&userId=$userId&target=$target';
     } else {
       print('@userId BBB');
-      return '${Config.homeUrl}/?t=${DateTime.now().millisecondsSinceEpoch}';
+      return '${Config.homeUrl}/?t=${DateTime.now().millisecondsSinceEpoch}&target=$target';
     }
   }
 }

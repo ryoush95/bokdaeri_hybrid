@@ -13,6 +13,7 @@ import android.content.Intent.URI_INTENT_SCHEME
 import android.annotation.SuppressLint
 
 class MainActivity: FlutterActivity() {
+    // 안드로이드 카카오톡 공유하기
     private var CHANNEL = "intent"
     private var methodChannel: MethodChannel? = null
 
