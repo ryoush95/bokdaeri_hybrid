@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:external_path/external_path.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -8,18 +9,23 @@ class Common {
   static Future<String> makeDownloadPath(String name) async {
     String dir = '';
     if (Platform.isAndroid) {
-      dir = '/storage/emulated/0/${Config.appName}Download';
+      //dir = '/storage/emulated/0/${Config.appName}Download';
+      dir = '${await ExternalPath.getExternalStoragePublicDirectory(ExternalPath.DIRECTORY_DOWNLOADS)}/${Config.appName}';
+      print('DOWNLOAD-DIR $dir');
       if (!Directory(dir).existsSync()) {
-        Directory(dir).createSync();
+        try {
+          Directory(dir).createSync();
+        } catch (e) {
+          dir = await ExternalPath.getExternalStoragePublicDirectory(ExternalPath.DIRECTORY_DOWNLOADS);
+        }
       }
     } else if (Platform.isIOS) {
-      dir = (await getApplicationDocumentsDirectory()).path;
-      print(dir);
+      dir = (await getApplicationSupportDirectory()).path;
     } else {
       throw Exception('Unsupported OS.');
     }
     while (true) {
-      String path = '$dir/$name.pdf';
+      String path = '$dir/$name';
       if (!File(path).existsSync()) {
         return path;
       }
